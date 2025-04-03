@@ -6,12 +6,26 @@ pipeline {
     }
   }
   stages {
+    // =================== CHECKOUT CODE FROM GITHUB REPO  =====================
+    // Checkout the code from GitHub repository
+    // This stage will clone the GitHub repository containing the Java application code
+    // and the Jenkinsfile
+    // =====================================================================
+
     stage('Checkout') {
       steps {
         sh 'echo passed'
         //git branch: 'main', url: 'https://github.com/iam-veeramalla/Jenkins-Zero-To-Hero.git'
       }
     }
+
+
+
+    // =================== BUILD AND TEST  =====================
+    // Build and Test the Java Application using Maven
+    // This stage will build the Java application and run tests using Maven
+    // =====================================================
+
     stage('Build and Test') {
       steps {
         sh 'ls -ltr'
@@ -19,7 +33,12 @@ pipeline {
         sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && mvn clean package'
       }
     }
-    stage('Static Code Analysis') {
+
+
+    // =================== STAIC CODE ANALYSIS  =====================
+    // Static Code Analysis using SonarQube
+    // ============================================================
+        stage('Static Code Analysis') {
       environment {
         SONAR_URL = "http://34.201.116.83:9000"
       }
@@ -29,6 +48,10 @@ pipeline {
         }
       }
     }
+    // =================  BUILD DOCKER IMAGES   =====================
+    // Build and Push Docker Image to Docker Hub
+    // This stage will build a Docker image and push it to Docker Hub
+    // ==============================================================  
     stage('Build and Push Docker Image') {
       environment {
         DOCKER_IMAGE = "abhishekf5/ultimate-cicd:${BUILD_NUMBER}"
@@ -45,6 +68,10 @@ pipeline {
         }
       }
     }
+    // =================== DEPLOY TO KUBERNETES CLUSTER   ======================
+    // Deploy to Kubernetes using HArgoCD
+    // This stage will deploy the application to a Kubernetes cluster using ArgoCD
+    // =====================================================================
     stage('Update Deployment File') {
         environment {
             GIT_REPO_NAME = "Jenkins-Zero-To-Hero"
@@ -64,5 +91,26 @@ pipeline {
             }
         }
     }
+
+    
   }
+
+  post {
+    always {
+      // Clean up workspace after the build
+      cleanWs()
+    }
+    success {
+      echo 'Build completed successfully!'
+      // Send notification to Slack or any other service
+      slackSend (channel: '#jenkins', message: "Build ${env.BUILD_NUMBER} completed successfully!") 
+
+    }
+    failure {
+      echo 'Build failed!'
+      // Send notification to Slack or any other service
+      slackSend (channel: '#jenkins', message: "Build ${env.BUILD_NUMBER} failed!")
+    }
+  }
+ 
 }
